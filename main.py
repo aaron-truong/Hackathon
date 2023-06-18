@@ -84,8 +84,8 @@ my_role = "college student"
 
 
 
-llm = OpenAI(openai_api_key="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", temperature=0.4)
-chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
+llm = OpenAI(openai_api_key="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", temperature=0.4)
+chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
 # company = input("Please input the company name: ")
 
 # comp_descrip = llm.predict(f"Please give me a 50 word description of the company {company}.").strip()
