@@ -1,6 +1,11 @@
 from langchain.llms import OpenAI
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Optional
 from langchain.chat_models import ChatOpenAI
+from langchain.prompts.chat import SystemMessagePromptTemplate
+from generate_task import BabyAGI
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.docstore import InMemoryDocstore
 from langchain.schema import (
     AIMessage,
     HumanMessage,
@@ -10,6 +15,7 @@ from langchain.schema import (
 from dialogue_template import DialogueAgent, DialogueSimulator
 
 # hyperparameters
+key = "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"
 difficulty = 0.5
 company = "Jane Street"
 word_limit = 50
@@ -85,8 +91,8 @@ my_role = "college student"
 
 
 
-llm = OpenAI(openai_api_key="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", temperature=0.4)
-chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
+llm = OpenAI(openai_api_key=key, temperature=0.4)
+chat_llm = ChatOpenAI(openai_api_key=key, temperature=rng)
 # company = input("Please input the company name: ")
 
 # comp_descrip = llm.predict(f"Please give me a 50 word description of the company {company}.").strip()
@@ -108,32 +114,127 @@ chat_llm = ChatOpenAI(openai_api_key="sk-uPuOjqF4ZEtR5czTTPo0T3BlbkFJ1TWJZ1eh4uX
 
 # = input("Please input your resumé/self-description: ")
 
+embeddings_model = OpenAIEmbeddings(openai_api_key=key)
+import faiss
+
+embedding_size = 1536
+index = faiss.IndexFlatL2(embedding_size)
+vectorstore = FAISS(embeddings_model.embed_query, index, InMemoryDocstore({}), {})
+
+OBJECTIVE = f'''
+Conduct a {focus} interview as a {role} at {company}. The person you are interviewing
+is a {my_role}, applying for the {job_title} position, which has the description: "{job_descrip}". 
+The interviewee's resume is: "{self_descrip}".
+'''
+
+llm = OpenAI(openai_api_key=key, temperature=0)
+
+# Logging of LLMChains
+verbose = False
+# If None, will keep on going forever
+max_iterations: Optional[int] = 1
+baby_agi = BabyAGI.from_llm(
+    llm=llm, vectorstore=vectorstore, verbose=verbose, max_iterations=max_iterations
+)
+baby_agi({"objective": OBJECTIVE})
+
+task_list = baby_agi.task_list
+task_list.appendleft({'task_id':'1', 'task_name':"Introduce yourself and the company, and ask the interviewee to introduce himself."})
+print(baby_agi.task_list)
+
 int_message = SystemMessage(content=f'''
-Your name is {name}. You are a {role} at the company {company}, {job_descrip}. You are conducting a {focus} interview for Me,
-a {my_role} applying for the {job_title} job, which has the job description: "{job_descrip}". You have already looked at my resume: "{self_descrip}" and will ask
-questions specific to the job description and my resume.
+Your name is {name}. You are a {role} at the company {company}, conducting a {focus} interview for
+the {job_title} job, which has the job description: "{job_descrip}". Broadly follow the outline: "{task_list}". Ask
+questions specific to the interviewee's resume: "{self_descrip}".
 Speak only in first person from the perspective of {name}. Do not change roles! Do not speak from the 
-perspective of anyone else. Remember you are {name}, a {role} at {company}. Never forget to
-keep your reponse to {word_limit} words. Do not add anything else.
+perspective of anyone else. After you speak, wait for a response from the interviewee. Never forget to
+keep your reponse to {word_limit} words. Remember you are {name} at company {company}. Do not add anything else.
 ''')
 
-interviewer = DialogueAgent(name=name, system_message=int_message, model=chat_llm)
+# sys_template = SystemMessagePromptTemplate.from_template(template=int_message)
+# sys_message = sys_template.format_messages(a)
+
+interviewer = DialogueAgent(
+                name=name, 
+                system_message=int_message,
+                model=chat_llm)
 interviewer.reset()
 # interviewer.receive(name, int_message)
 idx = 0
 
-for i in range(30):
-    if idx % 2 == 0:
-        message = interviewer.send()
-        interviewer.receive(name, message)
-        print(message)
-    else:
-        message = input()
-        interviewer.receive("me", message)
-    idx += 1
+# for i in range(30):
+#     if idx % 2 == 0:
+#         message = interviewer.send()
+#         interviewer.receive(name, message)
+#         print(message)
+#     else:
+#         message = input()
+#         interviewer.receive("me", message)
+#     idx += 1
 
 
 
 
 
+from tkinter import *
+
+# GUI
+root = Tk()
+root.title("Interview Simulator")
+
+BG_GRAY = "#ABB2B9"
+BG_COLOR = "#17202A"
+TEXT_COLOR = "#EAECEE"
+
+FONT = "Helvetica 14"
+FONT_BOLD = "Helvetica 13 bold"
+
+
+# Send function
+
+lable1 = Label(root, bg=BG_COLOR, fg=TEXT_COLOR, text="Welcome", font=FONT_BOLD, pady=10, width=20, height=1).grid(
+	row=0)
+
+txt = Text(root, bg=BG_COLOR, fg=TEXT_COLOR, font=FONT, width=120)
+txt.grid(row=1, column=0, columnspan=2)
+
+def send():
+    send = "You -> " + e.get()
+    txt.insert(END, "\n" + send)
+    user = e.get().lower()
+    interviewer.receive("me", user)
+    
+    e.delete(0, END)
+    if send.split(' ')[-1] == 'END':
+        #terminate and get diagnostic
+        god_instruction = SystemMessage(content=f'''
+            You work for {company} and are deciding whether or not to hire a candidate for the {job_title} job, which has the job description: "{job_descrip}".
+            You are given a script of an interview between the interviewee and the candidate and must only use the candidates responces as reason to hire or reject them.
+            You must decide whether or not to hire the candidate. You must explain and jusify
+            your choice. Do not add anything else.
+            ''')
+
+        master = DialogueAgent(name="master", system_message=god_instruction, model=chat_llm)
+        master.reset()
+        master.receive('master', 'here is a script:\n'+str(interviewer.message_history) + '\nLog ends. What is your decision?')
+        txt.insert(END, "\n BOT -> " + master.send())
+        return
+    message = interviewer.send()
+    interviewer.receive(name, message)
+    txt.insert(END, "\n" + "BOT -> " + message)
+
+scrollbar = Scrollbar(txt)
+scrollbar.place(relheight=1, relx=0.974)
+
+e = Entry(root, bg="#2C3E50", fg=TEXT_COLOR, font=FONT, width=55)
+e.grid(row=2, column=0)
+
+message = interviewer.send()
+interviewer.receive(name, message)
+txt.insert(END, "BOT -> " + message)
+
+send = Button(root, text="Send", font=FONT_BOLD, bg=BG_GRAY,
+			command=send).grid(row=2, column=1)
+
+root.mainloop()
 
