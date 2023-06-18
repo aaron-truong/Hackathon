@@ -11,13 +11,11 @@ from dialogue_template import DialogueAgent, DialogueSimulator
 
 # hyperparameters
 difficulty = 0.5
-company = "Google"
+company = "Jane Street"
 comp_descrip = '''
-Google is a multinational technology company that specializes in internet-related services and products. 
-It is one of the largest tech companies in the world and is known for its search engine, cloud computing, 
-software, and hardware. Google also offers a wide range of services such as Gmail, Google Maps, YouTube, 
-Google Play, and Google Drive. It is a leader in innovation and is constantly pushing the boundaries of 
-technology to create better products and services for its users.
+Jane Street is a global proprietary trading firm that specializes in quantitative trading and operates 
+in various financial markets. It was founded in 2000 and is headquartered in New York City. Jane Street 
+is known for its expertise in algorithmic trading and high-frequency trading strategies.
 '''
 
 self_descrip = '''
@@ -53,15 +51,32 @@ Problem Solving and Algorithm Design
 Strong Mathematical Foundation
 '''
 
-job_title = 'Software Engineering Intern, MS, Summer'
-job_descrip = '''Join us for a 12-14 week paid internship that offers personal and professional development, 
-an executive speaker series, and community-building. The Software Engineering Internship program will give you 
-an opportunity to work on complex computer science...
-Software Engineer, Software, Reliability Engineer, Summer, Intern, Engineer'''
+job_title = 'Software Engineering Intern'
+job_descrip = '''We are looking for Software Engineering Interns to join our Winter 2024 Co-op program. Our goal is to give you a real sense of what it’s like to work at Jane Street full time. Over the course of your internship, you will explore ways to approach and solve exciting problems within your field of interest through fun and challenging classes, interactive sessions, and group discussions—and then you will have the chance to put those lessons to practical use.
 
-rng = 0.3
+As an intern, you are paired with full-time employees who act as mentors, collaborating with you on real-world projects we actually need done. When you’re not working on your project, you will have plenty of time to use our office amenities, physical and virtual educational resources, attend social events, and engage with the parts of our work that excite you the most.
+
+If you’ve never thought about a career in finance, you’re in good company. Many of us were in the same position before working here. If you have a curious mind, a collaborative spirit, and a passion for solving interesting problems, we have a feeling you’ll fit right in.
+
+As a Software Engineering intern, you’ll learn how we use OCaml (our primary development language) in our day to day work, and gain exposure to the libraries and tools that are foundational to our internal systems.
+
+During the program you’ll work on two projects, mentored closely by the full-time employees who designed them. Some projects consider big-picture questions that we’re still trying to figure out, while others involve building something new. Your mentors will work in two distinct areas, so you’ll gain a better understanding of the wide range of problems we solve every day, from high performance trading systems to programming language design and everything in between. 
+
+If you’d like to learn more, you can read about our interview and team placement processes and get a sense of what our most recent intern projects looked like.
+
+About You
+We don’t expect you to have a background in finance, OCaml, functional programming, or any other specific field—we’re looking for smart people who enjoy solving interesting problems. We’re more interested in how you think and learn than what you currently know. You should be:
+
+Must be enrolled in a Co-op program at your university
+A top-notch programmer with a passion for technology
+Collaborative and courteous with strong interpersonal and communication skills
+Eager to ask questions, admit mistakes, and learn new things
+Must be able to work in-person in our NYC office from January 2024 through April 2024
+Fluent in English'''
+
+rng = 1.0
 focus = "technical"
-role = "senior engineer"
+role = "Senior Trader"
 name = "Nick"
 my_role = "college student"
 
@@ -69,8 +84,8 @@ my_role = "college student"
 
 
 
-llm = OpenAI(openai_api_key="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", temperature=0.4)
-chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
+llm = OpenAI(openai_api_key="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", temperature=0.4)
+chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
 # company = input("Please input the company name: ")
 
 # comp_descrip = llm.predict(f"Please give me a 50 word description of the company {company}.").strip()
@@ -93,11 +108,11 @@ chat_llm = ChatOpenAI(openai_api_key="sk-h4bXihX3w5lnR6Ybzad7T3BlbkFJtD5XCWTqK6f
 # = input("Please input your resumé/self-description: ")
 
 int_message = SystemMessage(content=f'''
-You are a {role} at {company} named {name}. {job_descrip} You will conduct a {focus} interview for me, 
-a {my_role} applying for the {job_title} job, which has description: "{job_descrip}". My resume is: "{self_descrip}". Speak in 
-first person from the perspective of {name}. Do not change roles! Do not speak from the perspective
-of anyone else. Remember you are {name}, a {role} at {company}. Do not add anything else. End the
-interview when you feel that it is done.
+Your name is {name}. You are a {role} at the company {company}, {job_descrip}. You are conducting a {focus} interview for Me,
+a {my_role} applying for the {job_title} job, which has the job description: "{job_descrip}". You have already looked at my resume: "{self_descrip}" and will ask
+questions specific to the job description and my resume.
+Speak only in first person from the perspective of {name}. Do not change roles! Do not speak from the 
+perspective of anyone else. Remember you are {name}, a {role} at {company}. Do not add anything else.
 ''')
 
 interviewer = DialogueAgent(name=name, system_message=int_message, model=chat_llm)
@@ -109,7 +124,7 @@ for i in range(30):
     if idx % 2 == 0:
         message = interviewer.send()
         interviewer.receive(name, message)
-        # print(message)
+        print(message)
     else:
         message = input()
         interviewer.receive("me", message)
