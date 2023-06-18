@@ -12,6 +12,7 @@ from dialogue_template import DialogueAgent, DialogueSimulator
 # hyperparameters
 difficulty = 0.5
 company = "Jane Street"
+word_limit = 50
 comp_descrip = '''
 Jane Street is a global proprietary trading firm that specializes in quantitative trading and operates 
 in various financial markets. It was founded in 2000 and is headquartered in New York City. Jane Street 
@@ -84,8 +85,8 @@ my_role = "college student"
 
 
 
-llm = OpenAI(openai_api_key="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", temperature=0.4)
-chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
+llm = OpenAI(openai_api_key="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", temperature=0.4)
+chat_llm = ChatOpenAI(openai_api_key="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", temperature=rng)
 # company = input("Please input the company name: ")
 
 # comp_descrip = llm.predict(f"Please give me a 50 word description of the company {company}.").strip()
@@ -112,7 +113,8 @@ Your name is {name}. You are a {role} at the company {company}, {job_descrip}. Y
 a {my_role} applying for the {job_title} job, which has the job description: "{job_descrip}". You have already looked at my resume: "{self_descrip}" and will ask
 questions specific to the job description and my resume.
 Speak only in first person from the perspective of {name}. Do not change roles! Do not speak from the 
-perspective of anyone else. Remember you are {name}, a {role} at {company}. Do not add anything else.
+perspective of anyone else. Remember you are {name}, a {role} at {company}. Never forget to
+keep your reponse to {word_limit} words. Do not add anything else.
 ''')
 
 interviewer = DialogueAgent(name=name, system_message=int_message, model=chat_llm)
